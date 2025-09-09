@@ -1,0 +1,95 @@
+import numpy as np
+
+# Sphere function (to be minimized)
+def sphere(x):
+    return sum(x_i ** 2 for x_i in x)
+
+# Parameters
+POP_SIZE = 50
+NUM_GENES = 10        # number of variables/dimensions
+NUM_GENERATIONS = 100
+MUTATION_RATE = 0.1
+CROSSOVER_RATE = 0.7
+BOUNDS = [-5.12, 5.12]
+
+# Gene expression (here: identity function, could be more complex)
+def express_gene(chromosome):
+    # This is where we could decode or map genes to a meaningful solution
+    return chromosome
+
+# Initialize population: each individual is a vector of NUM_GENES in the range
+def initialize_population():
+    return [np.random.uniform(BOUNDS[0], BOUNDS[1], NUM_GENES) for _ in range(POP_SIZE)]
+
+# Evaluate fitness (lower is better)
+def evaluate_population(population):
+    fitness = []
+    for individual in population:
+        expressed = express_gene(individual)
+        fitness.append(sphere(expressed))
+    return np.array(fitness)
+
+# Tournament selection
+def select_parents(population, fitness):
+    parents = []
+    for _ in range(len(population)):
+        i1, i2 = np.random.randint(0, len(population), 2)
+        winner = population[i1] if fitness[i1] < fitness[i2] else population[i2]
+        parents.append(winner.copy())
+    return parents
+
+# One-point crossover
+def crossover(parent1, parent2):
+    if np.random.rand() < CROSSOVER_RATE:
+        point = np.random.randint(1, NUM_GENES)
+        child1 = np.concatenate((parent1[:point], parent2[point:]))
+        child2 = np.concatenate((parent2[:point], parent1[point:]))
+        return child1, child2
+    return parent1.copy(), parent2.copy()
+
+# Mutation
+def mutate(individual):
+    for i in range(NUM_GENES):
+        if np.random.rand() < MUTATION_RATE:
+            individual[i] = np.random.uniform(BOUNDS[0], BOUNDS[1])
+    return individual
+
+# GEA main loop
+def gene_expression_algorithm():
+    population = initialize_population()
+    best_solution = None
+    best_score = float("inf")
+
+    for generation in range(NUM_GENERATIONS):
+        fitness = evaluate_population(population)
+
+        # Keep track of best solution
+        min_idx = np.argmin(fitness)
+        if fitness[min_idx] < best_score:
+            best_score = fitness[min_idx]
+            best_solution = population[min_idx].copy()
+
+        print(f"Generation {generation+1}/{NUM_GENERATIONS}, Best Fitness: {best_score:.5f}")
+
+        # Selection
+        parents = select_parents(population, fitness)
+
+        # Crossover and Mutation
+        next_generation = []
+        for i in range(0, POP_SIZE, 2):
+            p1 = parents[i]
+            p2 = parents[i + 1] if i + 1 < POP_SIZE else parents[0]
+            child1, child2 = crossover(p1, p2)
+            child1 = mutate(child1)
+            child2 = mutate(child2)
+            next_generation.extend([child1, child2])
+
+        # Truncate to pop size (in case of odd population)
+        population = next_generation[:POP_SIZE]
+
+    return best_solution, best_score
+
+# Run the algorithm
+best_individual, best_fitness = gene_expression_algorithm()
+print("\nBest Solution Found:", best_individual)
+print("Best Fitness Score:", best_fitness)
