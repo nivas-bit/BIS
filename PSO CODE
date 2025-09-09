@@ -1,0 +1,64 @@
+import numpy as np
+
+# Rastrigin function (to be minimized)
+def rastrigin(position):
+    A = 10
+    return A * len(position) + sum([(x ** 2 - A * np.cos(2 * np.pi * x)) for x in position])
+
+# Particle class
+class Particle:
+    def __init__(self, dim, bounds):
+        self.position = np.random.uniform(bounds[0], bounds[1], dim)
+        self.velocity = np.random.uniform(-1, 1, dim)
+        self.best_position = np.copy(self.position)
+        self.best_score = rastrigin(self.position)
+
+    def update_velocity(self, global_best, w, c1, c2):
+        r1 = np.random.rand(len(self.position))
+        r2 = np.random.rand(len(self.position))
+        cognitive = c1 * r1 * (self.best_position - self.position)
+        social = c2 * r2 * (global_best - self.position)
+        self.velocity = w * self.velocity + cognitive + social
+
+    def update_position(self, bounds):
+        self.position += self.velocity
+        self.position = np.clip(self.position, bounds[0], bounds[1])
+
+    def evaluate(self):
+        score = rastrigin(self.position)
+        if score < self.best_score:
+            self.best_score = score
+            self.best_position = np.copy(self.position)
+
+# PSO main function
+def pso(n_particles=30, dim=2, bounds=[-5.12, 5.12], w=0.5, c1=1.5, c2=1.5, max_iter=10):
+    # Initialize swarm
+    swarm = [Particle(dim, bounds) for _ in range(n_particles)]
+    global_best = swarm[0].best_position
+    global_best_score = swarm[0].best_score
+
+    # Find initial global best
+    for p in swarm:
+        if p.best_score < global_best_score:
+            global_best = p.best_position
+            global_best_score = p.best_score
+
+    # Main loop
+    for t in range(max_iter):
+        for p in swarm:
+            p.update_velocity(global_best, w, c1, c2)
+            p.update_position(bounds)
+            p.evaluate()
+            if p.best_score < global_best_score:
+                global_best = p.best_position
+                global_best_score = p.best_score
+
+        print(f"Iteration {t+1}/{max_iter}, Best Score: {global_best_score:.5f}")
+
+    return global_best, global_best_score
+
+# Run PSO
+best_position, best_score = pso()
+print("\nBest position found:", best_position)
+print("Best score:", best_score)   
+
